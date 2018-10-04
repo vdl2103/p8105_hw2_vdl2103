@@ -1,0 +1,24 @@
+---
+title: "p8105 Homework 2"
+author: Tory Lynch 
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+#### Problem 1
+
+##### Import CSV file and clean data 
+```{r}
+MTA_data <- read_csv(file = "./data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv", 
+                     col_types = "cccddccccccciiiicccccclclcccddcc") %>%
+            janitor::clean_names() %>%
+            dplyr::select(line:entry, vending, ada) %>%
+            mutate(entry = as.logical(ifelse(entry == "YES", TRUE, FALSE))) 
+
+skimr::skim(MTA_data)
+```
+
