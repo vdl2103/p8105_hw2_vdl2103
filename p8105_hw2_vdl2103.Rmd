@@ -22,3 +22,27 @@ MTA_data <- read_csv(file = "./data/NYC_Transit_Subway_Entrance_And_Exit_Data.cs
 skimr::skim(MTA_data)
 ```
 
+```{r, include = FALSE}
+dimensions <- dim(MTA_data)
+row <- dimensions[1]
+column <- dimensions[2]
+```
+
+##### Description of dataset 
+The dataset contains information about all of the NYC MTA subway station lines, including the station stops, locations (latitude, longitude, cross streets) and routes served (i.e. the numbers and/or letters of the trains on each line). Many of the variables address the accessiblity of the station line; these data describe the entrance and exit type for each station, whether or not they are staffed, have metro card vending machines, and are ADA-compliant. The dataset also includes information about the station entrances (lat, long, corner position) that is separate from the station location. The data cleaning process involved restricting the dataset from 32 to 19 variables. I removed the variables that described the entrance location (lat, long, corner position), whether the stations were exit only, and if the stations were staffed. I also converted the entry variable, which identifies whether a station has an entrance, from a character to a logical variable. The dimensions of the data are `r row` by `r column`. The data are tidy because I arranged them in a clear format by selecting the relevant variables and by converting a variable into an easier-to-use format. 
+
+##### Questions 
+```{r}
+#Question 1
+table_distinct_stations <- distinct(MTA_data) 
+num_distinct_stations <- as.integer(count(table_distinct_stations))
+
+#Question 2 
+proportion_ada_compliant <- (round(sum(table_distinct_stations$ada == "TRUE") / num_distinct_stations, 3))*100
+
+#Question 3 
+prop_entry_no_vending <- (round((sum(table_distinct_stations$vending == "NO" & table_distinct_stations$entry == "TRUE") /                sum(table_distinct_stations$vending == "NO")), 3))*100
+```
+
+There are `r num_distinct_stations` distinct stations, of which `r proportion_ada_compliant`% are ADA-compliant. Among the stations without vending, `r prop_entry_no_vending`% allow entrance. 
+
