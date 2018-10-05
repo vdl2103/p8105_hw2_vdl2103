@@ -8,6 +8,8 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readxl)
+library(p8105.datasets)
+library(ggplot2)
 ```
 
 #### Problem 1
@@ -49,7 +51,6 @@ prop_entry_no_vending <- (round((sum(table_distinct_stations$vending == "NO" &
 There are `r num_distinct_stations` distinct stations, of which `r proportion_ada_compliant`% are ADA-compliant. Among the stations without vending, `r prop_entry_no_vending`% allow entrance. 
 
 ##### Reformat data
-
 ```{r}
 stations_name_and_route <- gather(table_distinct_stations, key = route, value = line, route1: route11) %>%
   filter(!is.na(line)) %>%
@@ -112,6 +113,64 @@ total_precip_data <- total_precip_data %>%
 sportsballs_by_year <- trashwheel_data %>% 
   group_by(year) %>% 
   summarise(n = median(sports_balls))
+
+num_trashwheels <- n_distinct(trashwheel_data$dumpster)
+num_precip_months <- n_distinct(total_precip_data)
 ```
 
+##### Description of dataset 
+These datasets contain information about the Healthy Harbor Initiative in Baltimore, specifically the amount and type of trash collected by the trashwheel, and monthly precipitation in the surrounding area. The trashwheel dataset contains `r num_trashwheels` obsevations, each of which represents a dumpster-load of trash collected by the wheel. The dataset provides a breakdown of the type (e.g. plastic bottles, cigarette butts) and number of pieces of trash trapped by the trashwheel per dumpster-load each month between 2014 and 2018. The dataset also contains a variable that records how many homes were powered by the incineration of the trash; this variable is important because it underscores the mission behind the program, which is clean up the harbor while providing a "use" for the trash. The precipitation dataset has `r num_precip_months` observations, or months of data; these data are important because the amount of trash collected depends on the amount of precipitation and the associated runoff. The total precipitation in 2017 was 32.93 inches and the median number of sports balls per dumpster in 2016 was eight. 
+
+#### Problem 3 
+
+##### Import data
+```{r}
+ data("brfss_smart2010")
+ head(brfss_smart2010)
+ 
+ brfss_data <- filter(brfss_smart2010, Topic == "Overall Health") %>% 
+   janitor::clean_names() %>% 
+   dplyr::select(-(class:question), -(sample_size), -(confidence_limit_low:geo_location)) %>% 
+   spread(key = response, data_value) %>% 
+   janitor::clean_names() %>% 
+   mutate(proportion_excellent_or_good = (excellent + very_good)/(excellent+very_good+good+fair+poor)) %>% 
+   mutate(proportion_excellent = (excellent/(excellent+very_good+good+fair+poor)))
+```
+
+##### Questions 
+```{r}
+#Number of unique locations
+unique_locations <- n_distinct(brfss_data$locationdesc)
+
+#Number of locations per state 
+num_states <- brfss_data %>% 
+  group_by(locationabbr) %>% 
+  count()
+
+#Median of excellent response variable in 2002
+median_excellentRV_2002 <- brfss_data %>% 
+  drop_na() %>% 
+  group_by(year) %>% 
+  summarise(n = median(excellent))
+```
+
+There are `r unique_locations` unique locations included in the dataset. Each state, plus Washington, DC, is represented and New Jersey is the most observed state. The median of the excellent response variable in 2002 is 23.6, which means that the median percentage reporting excellent health is 23.6%.  
+
+##### Plots
+```{r}
+#Histogram
+ggplot(brfss_data, aes(x = excellent)) + geom_histogram(data=subset(brfss_data, year == 2002), na.rm = TRUE, bins = 30,
+      fill = "blue", alpha = .4) + labs(title = "Histogram of Proportion of People Reporting Excellent Health in 2002") + 
+      theme(plot.title = element_text(hjust = 0.5))
+
+#Scatterplot
+brfss_data %>% 
+  mutate(counties = ifelse(locationdesc == "NY - New York County", 1, ifelse(locationdesc == "NY - Queens County", 2,0))) %>% 
+  filter(counties > 0) %>% 
+  ggplot(aes(x = year, y = proportion_excellent)) + geom_point(aes(color = factor(counties)))  + 
+      theme(legend.title = element_text(colour = "black", size = 10)) + labs(title = "Proportion Reporting Excellent Health in New York 
+      County and Queens County between 2002 - 2010", x = "Year", y = "Proportion in excellent health") + 
+      scale_color_manual(labels = c("New York County", "Queens County"), values = c('red', 'blue'), name = "NY Counties") + 
+      theme(plot.title = element_text(hjust = 0.5))
+```
 
