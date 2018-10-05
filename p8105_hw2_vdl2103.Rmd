@@ -7,6 +7,7 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(readxl)
 ```
 
 #### Problem 1
@@ -51,7 +52,7 @@ There are `r num_distinct_stations` distinct stations, of which `r proportion_ad
 
 ```{r}
 stations_name_and_route <- gather(table_distinct_stations, key = route, value = line, route1: route11) %>%
-  filter(line != "NA") %>%
+  filter(!is.na(line)) %>%
   select(-route)
 
 stations_per_line <- stations_name_and_route %>%
@@ -61,4 +62,56 @@ total_a_train <- 34+57
 percent_ada_compliant <- (34 / total_a_train)*100
 ```
 
-There are `r total_a_train` distinct stations that serve the A line, `r percent_ada_compliant`% of which are ADA compliant. 
+There are `r total_a_train` distinct stations that serve the A line, `r percent_ada_compliant`% of which are ADA compliant.
+
+#### Problem 2
+
+##### Import Excel file and clean data
+```{r}
+#Trashwheel data
+trashwheel_data <- read_excel("data/HealthyHarborWaterWheelTotals2018-7-28.xlsx", 
+                              sheet = "Mr. Trash Wheel", 
+                              range = cell_cols("A:N")) %>% 
+                   janitor::clean_names() %>% 
+                   filter(!is.na(dumpster)) %>% 
+                   mutate(sports_balls = as.integer(round(sports_balls, 0)))
+
+#2017 precipitation data  
+precip_2017 <- read_excel("data/HealthyHarborWaterWheelTotals2018-7-28.xlsx", 
+                              sheet = "2017 Precipitation", 
+                              skip = 2, 
+                              col_names = c("Month", "Precip")) %>%  
+               filter(!is.na(Month)) %>% 
+               mutate(Year = 2017)
+
+#2016 precipitation data 
+precip_2016 <- read_excel("data/HealthyHarborWaterWheelTotals2018-7-28.xlsx", 
+                              sheet = "2016 Precipitation", 
+                              skip = 2, 
+                              col_names = c("Month", "Precip")) %>%  
+               filter(!is.na(Month)) %>% 
+               mutate(Year = 2016)                            
+
+#Combine precipitation data 
+total_precip_data <- bind_rows(precip_2016, precip_2017) %>% 
+               mutate(month = as.character(month.name[Month])) %>% 
+               select(-Month)
+```
+
+```{r}
+skimr::skim(trashwheel_data)
+skimr::skim(total_precip_data)
+
+total_2017_precip <- total_precip_data %>% 
+  group_by(Year) %>% 
+  tally(Precip)
+
+total_precip_data <- total_precip_data %>% 
+  mutate()
+
+sportsballs_by_year <- trashwheel_data %>% 
+  group_by(year) %>% 
+  summarise(n = median(sports_balls))
+```
+
+
